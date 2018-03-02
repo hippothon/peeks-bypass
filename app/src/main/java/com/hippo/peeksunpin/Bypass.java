@@ -23,20 +23,27 @@ public class Bypass implements IXposedHookLoadPackage {
             return;
         Log.d("PeeksUnpin", "Loaded inside peeks");
 
-        Class<?> targetClass = XposedHelpers.findClass("com.peeks.common.b.b", lpparam.classLoader);
-        Method[] pinningMethods = XposedHelpers.findMethodsByExactParameters(targetClass, boolean.class, HttpsURLConnection.class, Set.class);
-        Log.d("PeeksUnpin", "Found " + pinningMethods.length + " possible methods");
+        Class<?> targetClass = XposedHelpers.findClassIfExists("com.peeks.common.connectors.HttpClientForRest", lpparam.classLoader);
+        if (targetClass == null)
+            targetClass = XposedHelpers.findClassIfExists("com.peeks.common.b.b", lpparam.classLoader);
 
-        if (pinningMethods.length == 1) {
-            Method pinningMethod = pinningMethods[0];
-            Log.d("PeeksUnpin", "Using method: " + pinningMethod.getName());
+        if (targetClass == null)
+            Log.d("PeeksUnpin", "Couldn't find HttpClientForRest");
+        else {
+            Method[] pinningMethods = XposedHelpers.findMethodsByExactParameters(targetClass, boolean.class, HttpsURLConnection.class, Set.class);
+            Log.d("PeeksUnpin", "Found " + pinningMethods.length + " possible methods");
 
-            XposedBridge.hookMethod(pinningMethod, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    return true;
-                }
-            });
+            if (pinningMethods.length == 1) {
+                Method pinningMethod = pinningMethods[0];
+                Log.d("PeeksUnpin", "Using method: " + pinningMethod.getName());
+
+                XposedBridge.hookMethod(pinningMethod, new XC_MethodReplacement() {
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        return true;
+                    }
+                });
+            }
         }
     }
 }
